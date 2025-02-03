@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="weatherApp">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            background: linear-gradient(to right, #56CCF2, #2F80ED); 
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 450px;
+            margin: 0 auto;
+        }
+        .weather-container, .favorites {
+            background: white;
+            color: black;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            margin: 20px auto;
+        }
+        input {
+            padding: 10px;
+            width: 80%;
+            border: none;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        button {
+            background: #007BFF; 
+            color: white; 
+            padding: 10px 15px; 
+            border: none; 
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button:hover { background: #0056b3; }
+        ul { list-style: none; padding: 0; }
+        li { 
+            cursor: pointer; 
+            padding: 8px; 
+            background: #f0f0f0; 
+            margin: 5px 0; 
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        li:hover { background: #ddd; }
+        .error { color: red; }
+    </style>
+</head>
+<body ng-controller="WeatherController">
+    <div class="container">
+        <h1>🌦️ Weather Dashboard</h1>
+        <input type="text" ng-model="city" placeholder="Enter city name">
+        <button ng-click="getWeather()">Get Weather</button>
+        <p class="error" ng-if="error">{{ error }}</p>
+        
+        <div class="weather-container" ng-if="weather">
+            <h2>{{ weather.name }} 🌍</h2>
+            <p>🌡️ Temperature: <strong>{{ weather.main.temp }}°C</strong></p>
+            <p>💧 Humidity: <strong>{{ weather.main.humidity }}%</strong></p>
+            <p>🌤️ Condition: <strong>{{ weather.weather[0].description }}</strong></p>
+            <button ng-click="addToFavorites(weather.name)">⭐ Add to Favorites</button>
+        </div>
+        
+        <div class="favorites" ng-if="favorites.length">
+            <h2>⭐ Favorite Cities</h2>
+            <ul>
+                <li ng-repeat="fav in favorites | orderBy: 'toLowerCase()'" ng-click="getWeather(fav)">
+                    {{ fav }} 
+                    <button ng-click="removeFromFavorites(fav); $event.stopPropagation();" style="margin-left:10px;">❌</button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        angular.module('weatherApp', [])
+            .controller('WeatherController', function($scope, $http) {
+                $scope.apiKey = 'YOUR_API_KEY';  // Replace with actual API key
+                $scope.weather = null;
+                $scope.error = null;
+                $scope.favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+
+                $scope.getWeather = function(cityName) {
+                    let city = cityName || $scope.city;
+                    if (!city) return;
+                    
+                    let url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${$scope.apiKey}`;
+                    
+                    $http.get(url).then(
+                        function(response) {
+                            $scope.weather = response.data;
+                            $scope.error = null;
+                        },
+                        function() {
+                            $scope.error = 'City not found or API error!';
+                            $scope.weather = null;
+                        }
+                    );
+                };
+                
+                $scope.addToFavorites = function(city) {
+                    if (!$scope.favorites.includes(city)) {
+                        $scope.favorites.push(city);
+                        localStorage.setItem('favorites', JSON.stringify($scope.favorites));
+                    }
+                };
+                
+                $scope.removeFromFavorites = function(city) {
+                    $scope.favorites = $scope.favorites.filter(fav => fav !== city);
+                    localStorage.setItem('favorites', JSON.stringify($scope.favorites));
+                };
+            });
+    </script>
+</body>
+</html>
